@@ -16,8 +16,8 @@ def about():
 def health():
     return{"status":"okay!!"}
 
-@app.get("/students/{student_id}/subject/{subject_name}")
-def students(student_id : int , subject_name:str):
+@app.get("/students/{student_id}")
+def students(student_id : int , subject_name:str="All"):
     return{
         "student":student_id,
         "subject":subject_name
@@ -34,4 +34,24 @@ def products(product_id:int):
 def users(username:str):
     return{
         "username":{username}
+    }
+
+#Query Parameter
+@app.get("/search")
+def serach(keyword:str):
+    return{
+        "KeyWord":keyword
+    }
+
+@app.get("/get_products")
+def get_products(category:str,price:int):
+    return{
+        "category":category,
+        "price":price
+    }
+
+@app.get("/branch")
+def get_branch(branch:str="All"):
+    return{
+        "branch":branch
     }
