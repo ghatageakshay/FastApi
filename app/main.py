@@ -1,4 +1,51 @@
 from fastapi import FastAPI
+from pydantic import BaseModel , Field , field_validator , EmailStr , model_validator , computed_field
+from typing import List,Dict , Optional , Annotated 
+
+class Name(BaseModel):
+    first_name:str
+    middle_name:str
+    last_name:str
+
+    @model_validator(mode="after")
+    def name_transform(cls , model):
+        return model.first_name.upper() , model.middle_name.upper() , model.last_name.upper()
+
+class patient_data(BaseModel ):
+    age:int
+    name:Name
+    email: EmailStr
+    weight:float = Field(gt=50)
+    height:float
+    allergies:Optional[List[str]] = None
+    contact_details:Dict[str,str]
+
+    @field_validator('email')
+    @classmethod
+    def email_validate(cls , value):
+        domains = ["hdfc.com" , "icici,com" , "sbi.com"]
+        value_domain = value.split("@")[-1]
+        if value_domain not in domains:
+            raise ValueError('Enter valid email')
+
+        else:
+            return value
+
+   
+
+    @model_validator(mode="after")
+    def validate_emergency_contact(cls , model):
+        if len(model.allergies) > 3 and "emergency_contact" not in model.contact_details:
+            raise ValueError("You have more than 3 allergies please kindly add your emergency contact!!")
+
+        else:
+            return model
+
+    @computed_field
+    @property
+    def bmi(self) -> float:
+        bmi = round(self.weight / (self.height ** 2) , 2)
+        return bmi
 
 app = FastAPI()
 
@@ -55,3 +102,21 @@ def get_branch(branch:str="All"):
     return{
         "branch":branch
     }
+
+def patient(patient:patient_data):
+    print(patient.age)
+    print(patient.name)
+    print(patient.contact_details)
+    print(patient.allergies)
+    print("BMI" ,patient.bmi)
+    print("Inserted")
+    print(patient.name[0])
+
+
+name_dict = {"first_name" : "Akshay" , "middle_name":"Praveen" , "last_name":"Ghatage"}
+
+n1 = Name(**name_dict)
+
+patient_dict = {"age":12 , "name":n1 ,"email":"akshay@hdfc.com", "weight":52.5 ,"height":1.77, "allergies": ["pollen" , "dust" , "height" , "fire"] , "contact_details":{"email":"ghatageakshay96@gmail.com" , "phn no":"9156940632" , "emergency_contact":"9673134582"}}
+p1 = patient_data(**patient_dict)
+patient(p1)
