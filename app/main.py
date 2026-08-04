@@ -104,5 +104,11 @@ def search_patient(search:Search_data):
   
     raise HTTPException(status_code=400 , detail = "patient not found!")
        
+@app.get("/view_patients")
+def view_patients():
+    with open("patients_data.json","r") as f:
+        data = json.load(f)
 
+    return data
+    
     
