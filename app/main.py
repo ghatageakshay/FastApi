@@ -49,6 +49,24 @@ class patient_data(BaseModel ):
 
         return verdict
 
+    @computed_field
+    @property
+    def age_category(self) -> str:
+        if self.age < 10:
+            return "kid"
+
+        elif self.age < 20:
+            return "teenager"
+
+        elif self.age < 50:
+            return "adult"
+
+        else:
+            return "aged"
+
+class Search_data(BaseModel):
+    name:Annotated[str , Field(...,description="Enter the name to search for...")]
+
 app = FastAPI()
 
 def load_data():
@@ -72,4 +90,19 @@ def create(patient:patient_data):
     save_data(data)
 
     return JSONResponse(status_code=200 , content={"messagae":"patient added successfully!"})
+    
+@app.post("/search_patient")
+def search_patient(search:Search_data):
+    data = load_data()
+
+    for patient_id , patient in data.items():
+        if patient["name"]["first_name"].lower() == search.name.lower():
+            return{
+                "id":patient_id,
+                "patient":patient
+            }
+  
+    raise HTTPException(status_code=400 , detail = "patient not found!")
+       
+
     
