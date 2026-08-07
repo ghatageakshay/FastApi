@@ -2,6 +2,7 @@ from fastapi import APIRouter,HTTPException
 import json
 from fastapi.responses import JSONResponse
 from app.schemas.patient_models import patient_data,Name,patient_update,Search_data
+from app.schemas.patient_response import PatientResponse
 
 router = APIRouter()
 
@@ -27,16 +28,16 @@ def create(patient:patient_data):
 
     return JSONResponse(status_code=200 , content={"messagae":"patient added successfully!"})
     
-@router.post("/search_patient")
+@router.post("/search_patient",response_model=PatientResponse)
 def search_patient(search:Search_data):
     data = load_data()
 
     for patient_id , patient in data.items():
         if patient["name"]["first_name"].lower() == search.name.lower():
-            return{
-                "id":patient_id,
-                "patient":patient
-            }
+            
+            patient["id"] = patient_id
+            return patient
+            
   
     raise HTTPException(status_code=400 , detail = "patient not found!")
        
