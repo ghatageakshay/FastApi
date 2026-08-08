@@ -16,7 +16,7 @@ def save_data(data):
         json.dump(data , f)
 
 
-@router.post("/create")
+@router.post("/create",summary="Creates A new Patient!!")
 def create(patient:patient_data):
     data = load_data()
 
@@ -41,12 +41,13 @@ def search_patient(search:Search_data):
   
     raise HTTPException(status_code=400 , detail = "patient not found!")
        
-@router.get("/view_patients")
-def view_patients():
+@router.get("/view_patients",tags=["Patient"])
+def view_patients(count:int):
     with open("patients_data.json","r") as f:
         data = json.load(f)
 
-    return data
+    patinet_list = list(data.items())
+    return patinet_list[:count]
 
 @router.put("/update_patient/{patient_id}")
 def update_patient(patient_id:str,update_patient:patient_update):
