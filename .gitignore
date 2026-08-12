@@ -1,4 +1,7 @@
+# Virtual environments
+.venv/
 venv/
+
+# Python
 __pycache__/
-.env
-patients_data.json
+*.pyc
