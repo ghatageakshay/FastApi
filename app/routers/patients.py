@@ -1,8 +1,12 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException,Depends
 import json
 from fastapi.responses import JSONResponse
 from app.schemas.patient_models import patient_data,Name,patient_update,Search_data
 from app.schemas.patient_response import PatientResponse
+from app.database import SessionLocal,get_db
+from app.models.patient import Patient
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -17,67 +21,78 @@ def save_data(data):
 
 
 @router.post("/create",summary="Creates A new Patient!!")
-def create(patient:patient_data):
-    data = load_data()
-
-    if patient.id in data:
-        raise HTTPException(status_code=400 ,detail="Patient ALready Exists!!")
-
-    data[patient.id] = patient.model_dump(exclude=["id"])
-    save_data(data)
-
-    return JSONResponse(status_code=200 , content={"messagae":"patient added successfully!"})
+def create(patient:patient_data,db:Session = Depends(get_db)):
     
-@router.post("/search_patient",response_model=PatientResponse)
-def search_patient(search:Search_data):
-    data = load_data()
 
-    for patient_id , patient in data.items():
-        if patient["name"]["first_name"].lower() == search.name.lower():
-            
-            patient["id"] = patient_id
-            return patient
+    db_patient = Patient(
+        first_name = patient.name.first_name,
+        middle_name = patient.name.middle_name,
+        last_name = patient.name.last_name,
+        age = patient.age,
+        email = patient.email,
+        weight = patient.weight,
+        height = patient.height
+    )
+
+    db.add(db_patient)
+    db.commit()
+    db.refresh(db_patient)
+
+    return db_patient
+@router.post("/search_patient",response_model=list[PatientResponse])
+def search_patient(name:str,db:Session = Depends(get_db)):
+    stmt = select(Patient).where(Patient.first_name == name)
+
+    result = db.execute(stmt)
+    patient = result.scalars().all()
+
+    return patient
+    
+
+    
             
   
     raise HTTPException(status_code=400 , detail = "patient not found!")
        
 @router.get("/view_patients",tags=["Patient"])
-def view_patients(count:int):
-    with open("patients_data.json","r") as f:
-        data = json.load(f)
+def view_patients(db:Session = Depends(get_db)):
+    result = db.execute(select(Patient))
 
-    patinet_list = list(data.items())
-    return patinet_list[:count]
+    patients = result.scalars().all()
+
+    return patients
+    
+    
 
 @router.put("/update_patient/{patient_id}")
-def update_patient(patient_id:str,update_patient:patient_update):
-    data = load_data()
-    #check if patient exist or not
-    if patient_id not in data:
-        raise HTTPException(status_code=404 , detail="User not found!")
+def update_patient(patient_id:str,update_patient:patient_data,db:Session = Depends(get_db)):
 
-    existing_patient_info = data[patient_id]
-    #covert update object to dict
-    update_patient = update_patient.model_dump(exclude_unset=True)
+    stmt = select(Patient).where(Patient.id == patient_id)
 
-    #iterate in update dict to replace the updated value in existing dict
-    for key , values in update_patient.items():
-        existing_patient_info[key] = values
+    result = db.execute(stmt)
 
-    #add id field to existing dict
-    existing_patient_info["id"] = patient_id
-    patient_pydantic_object = patient_data(**existing_patient_info)
+    existing_patient = result.scalar_one_or_none()
 
-    #covert pydantic object back to dict excluding id we did to calculate those computed fields with updated values
-    existing_patient_info = patient_pydantic_object.model_dump(exclude='id')
+    if existing_patient is None:
+        raise HTTPException(status_code=400,detail="Patient Not Found!!")
 
-    #assign the  updated values to patient
-    data[patient_id] = existing_patient_info 
+    existing_patient.first_name = update_patient.name.first_name
+    existing_patient.middle_name = update_patient.name.middle_name
+    existing_patient.last_name = update_patient.name.last_name
+    existing_patient.age = update_patient.age
+    existing_patient.email = update_patient.email
+    existing_patient.weight = update_patient.weight
+    existing_patient.height = update_patient.height
 
-    save_data(data) 
+    db.commit()
+    db.refresh(existing_patient)
 
-    return JSONResponse(status_code=200 , content={"message":"patient updated successfully!!"})  
+    return existing_patient
 
+
+
+
+    
 @router.delete("/delete_patient/{patient_id}")
 def delete_patient(patient_id : str):
     data = load_data()

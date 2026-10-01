@@ -7,15 +7,14 @@ class Name(BaseModel):
     last_name:str
 
 class patient_data(BaseModel ):
-    id:Annotated[str,Field(... , description="Patient Id" , examples=("P001","P002"))]
+   
     age:Annotated[int,Field(...,gt=0,lt=120,description="Age of the patient")]
     name:Annotated[Name,Field(...,description="Name of the patient")]
     email: Annotated[EmailStr,Field(description="Email Of patient")]
     weight:Annotated[float, Field(gt=0)]
     height:Annotated[float,Field(gt=0,description="Height Of patient in meters")]
-    contact_details:Annotated[Dict[str,str],Field(description="Contact Details of patient")]
 
-    @field_validator('email')
+    @field_validator("email")
     @classmethod
     def email_validate(cls , value):
         domains = ["hdfc.com" , "icici,com" , "sbi.com","gmail.com"]

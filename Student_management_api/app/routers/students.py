@@ -67,6 +67,44 @@ def update_student(id:str,student_details:Student_Update):
 
     return JSONResponse(status_code=200,content={"message":"student details updated!!"})
 
+@router.put("/update/{id}")
+def compl_update_student(id:str,student_details:Student_request):
+
+    data = load_data()
+
+    if id not in data:
+        raise HTTPException(
+            status_code = 404,
+            details = "user not found!!"
+        )
+
+    existing_student_data = data[id]
+
+    student_details = student_details.model_dump(exclude_unset = True)
+
+    for key , values in student_details.items():
+        existing_student_data[key] = values
+
+    existing_student_data["id"] = id
+
+
+    existing_student_data = Student_request(**existing_student_data)
+    existing_student_data = existing_student_data.model_dump(exclude="id")
+
+    updated_data = existing_student_data
+
+    data[id] = updated_data
+
+    save_data(data)
+    return JSONResponse(
+        status_code = 200,
+        content = {
+            "messgae":"Student Updated SuccessFully!"
+        }
+    )
+
+
+
 @router.delete("/delete/{id}")
 def delete_student(id:str):
     data = load_data()
