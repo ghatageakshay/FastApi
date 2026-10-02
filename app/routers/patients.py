@@ -10,15 +10,6 @@ from sqlalchemy import select
 
 router = APIRouter()
 
-def load_data():
-    with open("patients_data.json" , "r") as f:
-        data = json.load(f)
-        return data
-
-def save_data(data):
-    with open("patients_data.json" , "w") as f:
-        json.dump(data , f)
-
 
 @router.post("/create",summary="Creates A new Patient!!")
 def create(patient:patient_data,db:Session = Depends(get_db)):
@@ -38,8 +29,8 @@ def create(patient:patient_data,db:Session = Depends(get_db)):
     db.commit()
     db.refresh(db_patient)
 
-    return db_patient
-@router.post("/search_patient",response_model=list[PatientResponse])
+    return {db_patient}
+@router.get("/search_patient",response_model=list[PatientResponse])
 def search_patient(name:str,db:Session = Depends(get_db)):
     stmt = select(Patient).where(Patient.first_name == name)
 
@@ -48,11 +39,6 @@ def search_patient(name:str,db:Session = Depends(get_db)):
 
     return patient
     
-
-    
-            
-  
-    raise HTTPException(status_code=400 , detail = "patient not found!")
        
 @router.get("/view_patients",tags=["Patient"])
 def view_patients(db:Session = Depends(get_db)):
@@ -89,19 +75,60 @@ def update_patient(patient_id:str,update_patient:patient_data,db:Session = Depen
 
     return existing_patient
 
-
-
-
     
 @router.delete("/delete_patient/{patient_id}")
-def delete_patient(patient_id : str):
-    data = load_data()
+def delete_patient(patient_id : int,db:Session = Depends(get_db)):
 
-    if patient_id not in data:
-        raise HTTPException(status_code=404 , detail="Patient Not found!!")
+    stmt = select(Patient).where(Patient.id == patient_id)
+    result = db.execute(stmt)
+    existing_patient = result.scalar_one_or_none()
 
-    del data[patient_id]
+    if existing_patient is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found"
+        )
 
-    save_data(data)
+    db.delete(existing_patient)
 
-    return JSONResponse(status_code=200 , content={"message":"patient deleted!"})
+    db.commit()
+
+    return{
+        "message":"Patient Deleted Successfully!!"
+    }
+
+@router.patch("/update_patient/{patient_id}",response_model=PatientResponse)
+
+def patch_patient(
+    patient_id : int,
+    update_patient : patient_update,
+    db:Session = Depends(get_db)
+):
+
+    stmt = select(Patient).where(Patient.id == patient_id)
+
+    result = db.execute(stmt)
+    existing_patient = result.scalar_one_or_none()
+
+    if existing_patient is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found!!"
+        )
+
+    update_data = update_patient.model_dump(exclude_unset=True)
+
+    for key,value in update_data.items():
+
+        if key == "name":
+            existing_patient.first_name = value["first_name"]
+            existing_patient.middle_name = value["middle_name"]
+            existing_patient.last_name = value["last_name"]
+
+        else:
+            setattr(existing_patient,key,value)
+
+    db.commit()
+    db.refresh(existing_patient)
+
+    return existing_patient

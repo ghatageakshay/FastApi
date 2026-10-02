@@ -15,3 +15,6 @@ def welcome():
         "message": "Welcome to Patient Mangagement System!!"
     }
 
+
+
+

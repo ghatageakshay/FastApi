@@ -66,7 +66,6 @@ class patient_update(BaseModel ):
     email: Annotated[Optional[EmailStr],Field(default=None)]
     weight:Annotated[Optional[float], Field(default=None, gt=0)]
     height:Annotated[Optional[float],Field(default=None,gt=0)]
-    contact_details:Annotated[Optional[Dict[str,str]],Field(default=None)]
 
 class Search_data(BaseModel):
     name:Annotated[str , Field(...,description="Enter the name to search for...")]
