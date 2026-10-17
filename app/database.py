@@ -1,7 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+import os
+from dotenv import load_dotenv
 
-DATABASE_URL = "postgresql://postgres:admin@localhost/Patient_Data"
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL_LINK")
+
+if not DATABASE_URL:
+    raise KeyError("DataBase Url Not Found!!")
 
 engine = create_engine(DATABASE_URL)
 
