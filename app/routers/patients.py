@@ -8,28 +8,32 @@ from app.models.patient import Patient
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+from app.services.create_user import Create_user
+
 router = APIRouter()
 
 
 @router.post("/create",summary="Creates A new Patient!!")
-def create(patient:patient_data,db:Session = Depends(get_db)):
-    
+def create(patient:patient_data,service:Create_user = Depends(Create_user)):
 
-    db_patient = Patient(
-        first_name = patient.name.first_name,
-        middle_name = patient.name.middle_name,
-        last_name = patient.name.last_name,
-        age = patient.age,
-        email = patient.email,
-        weight = patient.weight,
-        height = patient.height
-    )
+    return service.create_user(patient)
 
-    db.add(db_patient)
-    db.commit()
-    db.refresh(db_patient)
+    # db_patient = Patient(
+    #     first_name = patient.name.first_name,
+    #     middle_name = patient.name.middle_name,
+    #     last_name = patient.name.last_name,
+    #     age = patient.age,
+    #     email = patient.email,
+    #     weight = patient.weight,
+    #     height = patient.height
+    # )
 
-    return {db_patient}
+    # db.add(db_patient)
+    # db.commit()
+    # db.refresh(db_patient)
+
+    # return {db_patient}
+
 @router.get("/search_patient",response_model=list[PatientResponse])
 def search_patient(name:str,db:Session = Depends(get_db)):
     stmt = select(Patient).where(Patient.first_name == name)
